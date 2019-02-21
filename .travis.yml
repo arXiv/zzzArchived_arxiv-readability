@@ -7,7 +7,9 @@ script:
 - script/test
 deploy:
   provider: script
-  script: script/deploy
+  script:
+    script/publish_chart &&
+    script/deploy readability labs
   skip_cleanup: true
   on:
     branch: master

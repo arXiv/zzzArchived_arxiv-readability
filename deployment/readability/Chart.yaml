@@ -1,4 +1,4 @@
-name: arxiv-readability
+name: readability
 version: 0.1
 appVersion: 0.1
 description: Rendering HTML from arXiv LaTeX sources.

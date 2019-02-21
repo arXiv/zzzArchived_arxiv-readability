@@ -8,3 +8,10 @@ namespace: development
 imageTag: latest
 secret_key: thisisnotasecret!
 script_name: /
+deployment_name: readability
+service_name: readability
+ingress_name: readability
+
+ingress:
+  host: changeme
+  path: /

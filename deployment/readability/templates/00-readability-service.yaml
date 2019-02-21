@@ -2,12 +2,14 @@ kind: Service
 metadata:
   annotations:
     prometheus.io/scrape: 'true'
-  name: arxiv-readability
+  name: "{{ default "readability" .Values.service_name }}"
+  namespace: "{{ .Values.namespace }}"
   labels:
     subsystem: "{{ .Values.labels.subsystem }}"
     container: readability
     service-group: ui
     log-style: uwsgi
+    env: "{{ .Values.namespace }}"
 spec:
   type: NodePort
   ports:
