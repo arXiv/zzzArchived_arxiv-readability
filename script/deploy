@@ -100,9 +100,8 @@ helm get $HELM_RELEASE --tiller-namespace $ENVIRONMENT 2> /dev/null \
         --set=ingress_name=$HELM_RELEASE \
         --set=ingress.host=$DEPLOYMENT_HOSTNAME \
         --set=namespace=$ENVIRONMENT \
-        --set=siteSearchEnabled=$SITE_SEARCH_ENABLED \
         --tiller-namespace $ENVIRONMENT \
-        --namespace $ENVIRONMENT 2> /dev/null \
+        --namespace $ENVIRONMENT  \
     || helm install arxiv/$CHART_NAME \
         --name=$HELM_RELEASE \
         --set=image_tag=$TRAVIS_COMMIT \
@@ -112,7 +111,7 @@ helm get $HELM_RELEASE --tiller-namespace $ENVIRONMENT 2> /dev/null \
         --set=ingress.host=$DEPLOYMENT_HOSTNAME \
         --set=namespace=$ENVIRONMENT \
         --tiller-namespace $ENVIRONMENT \
-        --namespace $ENVIRONMENT 2> /dev/null
+        --namespace $ENVIRONMENT
 DEPLOY_EXIT=$?
 
 # Send the result back to GitHub.
