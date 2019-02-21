@@ -8,3 +8,37 @@ namespace: development
 imageTag: latest
 secret_key: thisisnotasecret!
 script_name: /
+deploymentName: readability
+serviceName: readability
+ingressName: readability
+
+ingress:
+  host: changeme
+  path: /
+
+
+database:
+  secret:
+    name: secret-name
+    key: key-in-secret
+
+redis:
+  secret:
+    name: secret-name
+    key: key-in-secret
+
+django:
+  secret:
+    name: secret-name
+    key: key-in-secret
+
+vault:
+  secret:
+    name: changeme
+    host_key: changeme
+    port_key: changeme
+    credential_key: changeme
+
+s3:
+  bucket: changeme
+  region: us-east-1

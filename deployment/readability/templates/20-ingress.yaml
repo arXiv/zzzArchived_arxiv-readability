@@ -1,0 +1,21 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: "{{ default "readability" .Values.ingressName }}"
+  namespace: "{{ .Values.namespace }}"
+  annotations:
+    # ingress.kubernetes.io/rewrite-target: /
+    # ingress.kubernetes.io/x-forwarded-prefix: "/dev/html"
+    # ingress.kubernetes.io/add-base-url: "true"
+spec:
+  tls:  # This will use the default certificate for the ingress controller.
+  - hosts:
+    - "{{ .Values.ingress.host }}"
+  rules:
+  - host: "{{ .Values.ingress.host }}"
+    http:
+      paths:
+      - path: "{{ .Values.ingress.path }}"
+        backend:
+          serviceName: "{{ default "readability" .Values.serviceName }}"
+          servicePort: 80

@@ -122,12 +122,6 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.9/howto/static-files/
-
-# Added this to make redirects and static files work in the case that this is
-# not deployed at /, but the server is rewriting to /. I really wanted to not
-# do this, and everything else seems fine if I don't, but here it is. -E
-FORCE_SCRIPT_NAME = env('FORCE_SCRIPT_NAME', default=None)
-
 STATIC_URL = '/static/'
 
 if not DEBUG:
