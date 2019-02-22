@@ -8,6 +8,7 @@ script:
 deploy:
   provider: script
   script:
+    script/install_helm labs &&
     script/publish_chart &&
     script/deploy readability labs
   skip_cleanup: true
