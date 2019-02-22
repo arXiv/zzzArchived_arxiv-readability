@@ -2,6 +2,11 @@
 
 # Publish the Helm chart.
 #
+curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get > get_helm.sh
+chmod 700 get_helm.sh
+sudo ./get_helm.sh -v v2.8.0 || echo "Helm already installed"
+echo "Intalled Helm"
+
 # Add S3 repo. Requires AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY to be set
 # in the environment.
 helm plugin install https://github.com/hypnoglow/helm-s3.git || echo "Helm S3 already installed"
@@ -10,4 +15,4 @@ helm repo update
 echo "Updated Helm repo"
 
 helm package deployment/readability
-helm s3 push ./readability-*.tgz arxiv || echo "This version already published"
+helm s3 push ./readability-*.tgz arxiv || echo "This chart version already published"
