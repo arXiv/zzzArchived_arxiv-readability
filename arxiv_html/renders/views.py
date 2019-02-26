@@ -3,6 +3,11 @@ from rest_framework import generics, mixins, status
 from rest_framework.response import Response
 from .models import Render
 from .serializers import RenderSerializer
+import logging
+
+logging.basicConfig()
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class RenderDetail(mixins.UpdateModelMixin, generics.GenericAPIView):
@@ -12,11 +17,15 @@ class RenderDetail(mixins.UpdateModelMixin, generics.GenericAPIView):
     def put(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
+            logger.debug('got instance: %s', str(instance.__dict__))
         except Http404:
+            logger.debug('instance not found')
             serializer = self.get_serializer(data=self.get_lookup_kwargs())
             serializer.is_valid(raise_exception=True)
             render = serializer.save()
+            logger.debug('new render: %s', str(render.__dict__))
             render.delay()
+            logger.debug('dispatched async task')
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         instance.update_state()

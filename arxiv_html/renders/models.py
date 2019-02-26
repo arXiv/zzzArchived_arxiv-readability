@@ -6,6 +6,11 @@ from django.conf import settings
 from django.db import models
 
 from .tasks import run_engrafo_task
+import logging
+
+logging.basicConfig()
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class RenderError(Exception):
@@ -119,12 +124,16 @@ class Render(models.Model):
             # Celery provides no simple way of passing back data with a
             # failure, so instead use the error code to infer the final state.
             if result.result["exit_code"] == 0:
+                logger.debug('got exit_code 0')
                 self.state = states.SUCCESS
             else:
+                logger.debug('not non-zero exit code')
                 self.state = states.FAILURE
 
             self.logs = result.result.get("logs")
+            logger.debug('got logs: %s', self.logs)
         else:
+            logger.debug('task not successful')
             self.state = result.state
 
         self.save(update_fields=["state", "logs"])
