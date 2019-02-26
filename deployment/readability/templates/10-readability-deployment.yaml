@@ -172,8 +172,8 @@ spec:
             memory: "512Mi"
             cpu: "500m"
           limits:
-            memory: "3Gi"
-            cpu: "2"
+            memory: "1Gi"
+            cpu: "1"
         securityContext:
           privileged: true
         volumeMounts:
