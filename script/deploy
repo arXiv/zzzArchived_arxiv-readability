@@ -41,7 +41,10 @@ DATABASE_SECRET_NAME_VAR=DATABASE_SECRET_NAME_$(echo $ENVIRONMENT | awk '{print 
 DATABASE_SECRET_NAME=${DATABASE_SECRET_NAME_VAR}
 DJANGO_SECRET_NAME_VAR=DJANGO_SECRET_NAME_$(echo $ENVIRONMENT | awk '{print toupper($0)}')
 DJANGO_SECRET_NAME=${DJANGO_SECRET_NAME_VAR}
-
+VAULT_SECRET_NAME_VAR=VAULT_SECRET_NAME_$(echo $ENVIRONMENT | awk '{print toupper($0)}')
+VAULT_SECRET_NAME=${VAULT_SECRET_NAME_VAR}
+S3_BUCKET_VAR=S3_BUCKET_$(echo $ENVIRONMENT | awk '{print toupper($0)}')
+S3_BUCKET=${S3_BUCKET_VAR}
 
 if [ -z "$SITE_SEARCH_ENABLED" ]; then SITE_SEARCH_ENABLED="1"; fi
 
@@ -82,6 +85,11 @@ helm get $HELM_RELEASE --tiller-namespace $ENVIRONMENT 2> /dev/null \
         --set=django.secret.key=key \
         --set=database.secret.name=$DATABASE_SECRET_NAME \
         --set=database.secret.key=uri \
+        --set=vault.secret.name=$VAULT_SECRET_NAME \
+        --set=vault.secret.host_key=host \
+        --set=vault.secret.port_key=port \
+        --set=vault.secret.credential_key=credential \
+        --set=s3.bucket=$S3_BUCKET \
         --set=namespace=$ENVIRONMENT \
         --tiller-namespace $ENVIRONMENT \
         --namespace $ENVIRONMENT  \
@@ -98,6 +106,11 @@ helm get $HELM_RELEASE --tiller-namespace $ENVIRONMENT 2> /dev/null \
         --set=django.secret.key=key \
         --set=database.secret.name=$DATABASE_SECRET_NAME \
         --set=database.secret.key=uri \
+        --set=vault.secret.name=$VAULT_SECRET_NAME \
+        --set=vault.secret.host_key=host \
+        --set=vault.secret.port_key=port \
+        --set=vault.secret.credential_key=credential \
+        --set=s3.bucket=$S3_BUCKET \
         --set=namespace=$ENVIRONMENT \
         --tiller-namespace $ENVIRONMENT \
         --namespace $ENVIRONMENT
