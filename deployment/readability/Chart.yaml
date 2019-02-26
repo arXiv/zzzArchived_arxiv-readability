@@ -1,5 +1,5 @@
 name: readability
-version: 0.2.1
+version: 0.2.2
 appVersion: 0.1.1
 description: Rendering HTML from arXiv LaTeX sources.
 sources:
