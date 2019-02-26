@@ -1,7 +1,7 @@
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
-  name: "{{ default "readability" .Values.ingress_name }}"
+  name: "{{ default "readability" .Values.ingressName }}"
   namespace: "{{ .Values.namespace }}"
   annotations:
     # ingress.kubernetes.io/rewrite-target: /
@@ -17,5 +17,5 @@ spec:
       paths:
       - path: "{{ .Values.ingress.path }}"
         backend:
-          serviceName: "{{ default "readability" .Values.service_name }}"
+          serviceName: "{{ default "readability" .Values.serviceName }}"
           servicePort: 80

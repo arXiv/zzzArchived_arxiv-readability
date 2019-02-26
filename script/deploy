@@ -35,6 +35,13 @@ USER_SA=${!SA_NAME}
 HELM_RELEASE=${CHART_NAME}-${ENVIRONMENT}
 DEPLOYMENT_HOSTNAME=${!DEPLOYMENT_HOSTNAME_VAR}
 
+REDIS_SECRET_NAME_VAR=REDIS_SECRET_NAME_$(echo $ENVIRONMENT | awk '{print toupper($0)}')
+REDIS_SECRET_NAME=${REDIS_SECRET_NAME_VAR}
+DATABASE_SECRET_NAME_VAR=DATABASE_SECRET_NAME_$(echo $ENVIRONMENT | awk '{print toupper($0)}')
+DATABASE_SECRET_NAME=${DATABASE_SECRET_NAME_VAR}
+DJANGO_SECRET_NAME_VAR=DJANGO_SECRET_NAME_$(echo $ENVIRONMENT | awk '{print toupper($0)}')
+DJANGO_SECRET_NAME=${DJANGO_SECRET_NAME_VAR}
+
 
 if [ -z "$SITE_SEARCH_ENABLED" ]; then SITE_SEARCH_ENABLED="1"; fi
 
@@ -65,20 +72,32 @@ echo "Deploying ${CHART_NAME} in ${ENVIRONMENT}"
 helm get $HELM_RELEASE --tiller-namespace $ENVIRONMENT 2> /dev/null \
     && helm upgrade $HELM_RELEASE arxiv/$CHART_NAME \
         --set=image_tag=$TRAVIS_COMMIT \
-        --set=deployment_name=$HELM_RELEASE \
-        --set=service_name=$HELM_RELEASE \
-        --set=ingress_name=$HELM_RELEASE \
+        --set=deploymentName=$HELM_RELEASE \
+        --set=serviceName=$HELM_RELEASE \
+        --set=ingressName=$HELM_RELEASE \
         --set=ingress.host=$DEPLOYMENT_HOSTNAME \
+        --set=redis.secret.name=$REDIS_SECRET_NAME \
+        --set=redis.secret.key=uri \
+        --set=django.secret.name=$DJANGO_SECRET_NAME \
+        --set=django.secret.key=key \
+        --set=database.secret.name=$DATABASE_SECRET_NAME \
+        --set=database.secret.key=uri \
         --set=namespace=$ENVIRONMENT \
         --tiller-namespace $ENVIRONMENT \
         --namespace $ENVIRONMENT  \
     || helm install arxiv/$CHART_NAME \
         --name=$HELM_RELEASE \
         --set=image_tag=$TRAVIS_COMMIT \
-        --set=deployment_name=$HELM_RELEASE \
-        --set=service_name=$HELM_RELEASE \
-        --set=ingress_name=$HELM_RELEASE \
+        --set=deploymentName=$HELM_RELEASE \
+        --set=serviceName=$HELM_RELEASE \
+        --set=ingressName=$HELM_RELEASE \
         --set=ingress.host=$DEPLOYMENT_HOSTNAME \
+        --set=redis.secret.name=$REDIS_SECRET_NAME \
+        --set=redis.secret.key=uri \
+        --set=django.secret.name=$DJANGO_SECRET_NAME \
+        --set=django.secret.key=key \
+        --set=database.secret.name=$DATABASE_SECRET_NAME \
+        --set=database.secret.key=uri \
         --set=namespace=$ENVIRONMENT \
         --tiller-namespace $ENVIRONMENT \
         --namespace $ENVIRONMENT

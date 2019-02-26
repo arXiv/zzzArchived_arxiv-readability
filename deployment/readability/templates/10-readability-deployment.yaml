@@ -1,11 +1,11 @@
 apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
-  name: "{{ default "readability" .Values.deployment_name }}"
+  name: "{{ default "readability" .Values.deploymentName }}"
   namespace: "{{ .Values.namespace }}"
   labels:
     subsystem: "{{ .Values.labels.subsystem }}"
-    container: "{{ default "readability" .Values.deployment_name }}"
+    container: "{{ default "readability" .Values.deploymentName }}"
     service-group: ui
     log-style: uwsgi
 spec:
@@ -14,14 +14,14 @@ spec:
     metadata:
       labels:
         subsystem: "{{ .Values.labels.subsystem }}"
-        container: "{{ default "readability" .Values.deployment_name }}"
+        container: "{{ default "readability" .Values.deploymentName }}"
         service-group: ui
         log-style: uwsgi
       annotations:
         prometheus.io/scrape: 'true'
     spec:
       containers:
-      - name: "{{ default "readability" .Values.deployment_name }}"
+      - name: "{{ default "readability" .Values.deploymentName }}"
         image: arxiv/readability:{{ .Values.imageTag }}
         imagePullPolicy: Always
         ports:
@@ -55,11 +55,11 @@ spec:
 apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
-  name: "{{ default "readability" .Values.deployment_name }}-worker"
+  name: "{{ default "readability" .Values.deploymentName }}-worker"
   namespace: "{{ .Values.namespace }}"
   labels:
     subsystem: "{{ .Values.labels.subsystem }}"
-    container: "{{ default "readability" .Values.deployment_name }}-worker"
+    container: "{{ default "readability" .Values.deploymentName }}-worker"
     service-group: backend
     log-style: celery
 spec:
@@ -68,7 +68,7 @@ spec:
     metadata:
       labels:
         subsystem: "{{ .Values.labels.subsystem }}"
-        container: "{{ default "readability" .Values.deployment_name }}-worker"
+        container: "{{ default "readability" .Values.deploymentName }}-worker"
         service-group: backend
         log-style: celery
       annotations:

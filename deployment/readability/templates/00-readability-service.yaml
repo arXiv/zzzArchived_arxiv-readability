@@ -2,11 +2,11 @@ kind: Service
 metadata:
   annotations:
     prometheus.io/scrape: 'true'
-  name: "{{ default "readability" .Values.service_name }}"
+  name: "{{ default "readability" .Values.serviceName }}"
   namespace: "{{ .Values.namespace }}"
   labels:
     subsystem: "{{ .Values.labels.subsystem }}"
-    container: "{{ default "readability" .Values.deployment_name }}"
+    container: "{{ default "readability" .Values.deploymentName }}"
     service-group: ui
     log-style: uwsgi
     env: "{{ .Values.namespace }}"
@@ -17,4 +17,4 @@ spec:
     targetPort: 8000
   selector:
     subsystem: "{{ .Values.labels.subsystem }}"
-    container: "{{ default "readability" .Values.deployment_name }}"
+    container: "{{ default "readability" .Values.deploymentName }}"
