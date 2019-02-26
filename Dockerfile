@@ -9,4 +9,4 @@ RUN pipenv install --system --deploy
 COPY . /code/
 RUN SECRET_KEY=unset python manage.py collectstatic --no-input
 ENV PORT 8000
-CMD gunicorn arxiv_html.wsgi --bind 0.0.0.0:$PORT
+CMD gunicorn arxiv_html.wsgi --bind 0.0.0.0:$PORT --error-logfile -

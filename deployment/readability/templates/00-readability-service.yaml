@@ -6,7 +6,7 @@ metadata:
   namespace: "{{ .Values.namespace }}"
   labels:
     subsystem: "{{ .Values.labels.subsystem }}"
-    container: readability
+    container: "{{ default "readability" .Values.deployment_name }}"
     service-group: ui
     log-style: uwsgi
     env: "{{ .Values.namespace }}"
@@ -17,4 +17,4 @@ spec:
     targetPort: 8000
   selector:
     subsystem: "{{ .Values.labels.subsystem }}"
-    container: readability
+    container: "{{ default "readability" .Values.deployment_name }}"

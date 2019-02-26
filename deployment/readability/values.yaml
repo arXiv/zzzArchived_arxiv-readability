@@ -15,3 +15,19 @@ ingress_name: readability
 ingress:
   host: changeme
   path: /
+
+
+database:
+  secret:
+    name: secret-name
+    key: key-in-secret
+
+redis:
+  secret:
+    name: secret-name
+    key: key-in-secret
+
+django:
+  secret:
+    name: secret-name
+    key: key-in-secret

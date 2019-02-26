@@ -5,7 +5,7 @@ metadata:
   namespace: "{{ .Values.namespace }}"
   labels:
     subsystem: "{{ .Values.labels.subsystem }}"
-    container: readability
+    container: "{{ default "readability" .Values.deployment_name }}"
     service-group: ui
     log-style: uwsgi
 spec:
@@ -14,33 +14,43 @@ spec:
     metadata:
       labels:
         subsystem: "{{ .Values.labels.subsystem }}"
-        container: readability
+        container: "{{ default "readability" .Values.deployment_name }}"
         service-group: ui
         log-style: uwsgi
       annotations:
         prometheus.io/scrape: 'true'
     spec:
       containers:
-      - name: arxiv-readability
+      - name: "{{ default "readability" .Values.deployment_name }}"
         image: arxiv/readability:{{ .Values.imageTag }}
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
         env:
         - name: DATABASE_URL
-          value: "{{ .Values.database_url }}"
+          valueFrom:
+            secretKeyRef:
+              name: "{{ .Values.database.secret.name }}"
+              key: "{{ .Values.database.secret.key }}"
         - name: CELERY_BROKER_URL
-          value: "redis://{{ .Values.redis.host }}:{{ .Values.redis.port}}"
+          valueFrom:
+            secretKeyRef:
+              name: "{{ .Values.redis.secret.name }}"
+              key: "{{ .Values.redis.secret.key }}"
         - name: CELERY_RESULT_BACKEND
-          value: "redis://{{ .Values.redis.host }}:{{ .Values.redis.port}}"
+          valueFrom:
+            secretKeyRef:
+              name: "{{ .Values.redis.secret.name }}"
+              key: "{{ .Values.redis.secret.key }}"
         - name: SECRET_KEY
-          value: "{{ .Values.secret_key }}"
-        - name: SCRIPT_NAME
-          value: "{{ .Values.script_name }}"
-        - name: FORCE_SCRIPT_NAME
-          value: "{{ .Values.script_name }}"
+          valueFrom:
+            secretKeyRef:
+              name: "{{ .Values.django.secret.name }}"
+              key: "{{ .Values.django.secret.key }}"
         - name: ALLOWED_HOSTS
           value: "*"
+        - name: DJANGO_LOG_LEVEL
+          value: "DEBUG"
 ---
 apiVersion: apps/v1beta1
 kind: Deployment
@@ -49,7 +59,7 @@ metadata:
   namespace: "{{ .Values.namespace }}"
   labels:
     subsystem: "{{ .Values.labels.subsystem }}"
-    container: readability-worker
+    container: "{{ default "readability" .Values.deployment_name }}-worker"
     service-group: backend
     log-style: celery
 spec:
@@ -58,7 +68,7 @@ spec:
     metadata:
       labels:
         subsystem: "{{ .Values.labels.subsystem }}"
-        container: readability-worker
+        container: "{{ default "readability" .Values.deployment_name }}-worker"
         service-group: backend
         log-style: celery
       annotations:
@@ -76,12 +86,24 @@ spec:
           - celery -A arxiv_html worker -l info
         env:
         - name: DATABASE_URL
-          value: "{{ .Values.database_url }}"
+          valueFrom:
+            secretKeyRef:
+              name: "{{ .Values.database.secret.name }}"
+              key: "{{ .Values.database.secret.key }}"
         - name: CELERY_BROKER_URL
-          value: "redis://{{ .Values.redis.host }}:{{ .Values.redis.port}}"
+          valueFrom:
+            secretKeyRef:
+              name: "{{ .Values.redis.secret.name }}"
+              key: "{{ .Values.redis.secret.key }}"
         - name: CELERY_RESULT_BACKEND
-          value: "redis://{{ .Values.redis.host }}:{{ .Values.redis.port}}"
+          valueFrom:
+            secretKeyRef:
+              name: "{{ .Values.redis.secret.name }}"
+              key: "{{ .Values.redis.secret.key }}"
         - name: SECRET_KEY
-          value: "{{ .Values.secret_key }}"
+          valueFrom:
+            secretKeyRef:
+              name: "{{ .Values.django.secret.name }}"
+              key: "{{ .Values.django.secret.key }}"
         - name: ALLOWED_HOSTS
           value: "*"
