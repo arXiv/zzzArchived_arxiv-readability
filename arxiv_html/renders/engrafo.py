@@ -9,7 +9,6 @@ logger.setLevel(logging.DEBUG)
 
 
 def run_engrafo(source_url, output_path):
-    print('run engrafo')
     environment = {}
     volumes = {}
     # Production

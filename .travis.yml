@@ -13,4 +13,4 @@ deploy:
     script/deploy readability labs
   skip_cleanup: true
   on:
-    branch: deployment
+    branch: master
