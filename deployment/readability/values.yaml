@@ -31,3 +31,14 @@ django:
   secret:
     name: secret-name
     key: key-in-secret
+
+vault:
+  secret:
+    name: changeme
+    host_key: changeme
+    port_key: changeme
+    credential_key: changeme
+
+s3:
+  bucket: changeme
+  region: us-east-1
