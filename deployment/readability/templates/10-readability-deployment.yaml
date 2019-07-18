@@ -1,10 +1,20 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  namespace: "{{ .Values.namespace }}"
+  name: readability-worker
+  labels:
+    subsystem: "{{ .Values.labels.subsystem }}"
+
+---
 apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
-  name: arxiv-readability
+  name: "{{ default "readability" .Values.deploymentName }}"
+  namespace: "{{ .Values.namespace }}"
   labels:
     subsystem: "{{ .Values.labels.subsystem }}"
-    container: readability
+    container: "{{ default "readability" .Values.deploymentName }}"
     service-group: ui
     log-style: uwsgi
 spec:
@@ -13,41 +23,103 @@ spec:
     metadata:
       labels:
         subsystem: "{{ .Values.labels.subsystem }}"
-        container: readability
+        container: "{{ default "readability" .Values.deploymentName }}"
         service-group: ui
         log-style: uwsgi
       annotations:
         prometheus.io/scrape: 'true'
     spec:
+      serviceAccount: readability-worker
+      volumes:
+      - name: vault-token
+        emptyDir: {}
       containers:
-      - name: arxiv-readability
+      - name: "{{ default "readability" .Values.deploymentName }}"
         image: arxiv/readability:{{ .Values.imageTag }}
         imagePullPolicy: Always
+        volumeMounts:
+        - name: vault-token
+          mountPath: /etc/vault
+        command:
+          - "sh"
+          - "-c"
+          - >
+            while true; do
+              KUBE_TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token);
+              curl -k --request POST --data '{"jwt": "'"$KUBE_TOKEN"'", "role": "'"$VAULT_ROLE"'"}' https://$VAULT_HOST:$VAULT_PORT/v1/auth/kubernetes/login | jq -j '.auth.client_token' > /etc/vault/token;
+              X_VAULT_TOKEN=$(cat /etc/vault/token);
+              $(eval "curl -k -H \"X-Vault-Token: $X_VAULT_TOKEN\" https://$VAULT_HOST:$VAULT_PORT/v1/aws/creds/$VAULT_CREDENTIAL | jq -r '.data | \"export AWS_ACCESS_KEY_ID=\(.access_key)\nexport AWS_SECRET_ACCESS_KEY=\(.secret_key)\"'");
+              if [ -f /var/run/gunicorn.pid ]; then kill `cat /var/run/gunicorn.pid`; fi;
+              gunicorn arxiv_html.wsgi --bind 0.0.0.0:$PORT --error-logfile - -p /var/run/gunicorn.pid;
+              sleep 72764795;
+            done
         ports:
         - containerPort: 8000
+        resources:
+          limits:
+            cpu: 300m
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
         env:
         - name: DATABASE_URL
-          value: "{{ .Values.database_url }}"
+          valueFrom:
+            secretKeyRef:
+              name: "{{ .Values.database.secret.name }}"
+              key: "{{ .Values.database.secret.key }}"
         - name: CELERY_BROKER_URL
-          value: "redis://{{ .Values.redis.host }}:{{ .Values.redis.port}}"
+          valueFrom:
+            secretKeyRef:
+              name: "{{ .Values.redis.secret.name }}"
+              key: "{{ .Values.redis.secret.key }}"
         - name: CELERY_RESULT_BACKEND
-          value: "redis://{{ .Values.redis.host }}:{{ .Values.redis.port}}"
+          valueFrom:
+            secretKeyRef:
+              name: "{{ .Values.redis.secret.name }}"
+              key: "{{ .Values.redis.secret.key }}"
         - name: SECRET_KEY
-          value: "{{ .Values.secret_key }}"
-        - name: SCRIPT_NAME
-          value: "{{ .Values.script_name }}"
-        - name: FORCE_SCRIPT_NAME
-          value: "{{ .Values.script_name }}"
+          valueFrom:
+            secretKeyRef:
+              name: "{{ .Values.django.secret.name }}"
+              key: "{{ .Values.django.secret.key }}"
+        - name: VAULT_HOST
+          valueFrom:
+            secretKeyRef:
+              name: "{{ .Values.vault.secret.name }}"
+              key: "{{ .Values.vault.secret.host_key }}"
+        - name: VAULT_PORT
+          valueFrom:
+            secretKeyRef:
+              name: "{{ .Values.vault.secret.name }}"
+              key: "{{ .Values.vault.secret.port_key }}"
+        - name: VAULT_CREDENTIAL
+          valueFrom:
+            secretKeyRef:
+              name: "{{ .Values.vault.secret.name }}"
+              key: "{{ .Values.vault.secret.credential_key }}"
+        - name: VAULT_ROLE
+          value: readability-worker
         - name: ALLOWED_HOSTS
           value: "*"
+        - name: DJANGO_LOG_LEVEL
+          value: "DEBUG"
+        - name: AWS_STORAGE_BUCKET_NAME
+          value: "{{ .Values.s3.bucket }}"
+        - name: AWS_S3_REGION_NAME
+          value: "{{ .Values.s3.region }}"
+        - name: MEDIA_USE_S3
+          value: "1"
+
 ---
 apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
-  name: arxiv-readability-worker
+  name: "{{ default "readability" .Values.deploymentName }}-worker"
+  namespace: "{{ .Values.namespace }}"
   labels:
     subsystem: "{{ .Values.labels.subsystem }}"
-    container: readability-worker
+    container: "{{ default "readability" .Values.deploymentName }}-worker"
     service-group: backend
     log-style: celery
 spec:
@@ -56,31 +128,134 @@ spec:
     metadata:
       labels:
         subsystem: "{{ .Values.labels.subsystem }}"
-        container: readability-worker
+        container: "{{ default "readability" .Values.deploymentName }}-worker"
         service-group: backend
         log-style: celery
       annotations:
         prometheus.io/scrape: 'true'
     spec:
+      serviceAccount: readability-worker
+      volumes:
+      - name: vault-token
+        emptyDir: {}
+      - name: docker-graph-storage
+        emptyDir: {}
+      - name: run
+        emptyDir: {}
+
+      initContainers:
+      - name: pull-engrafo
+        image: docker:18.09.2-dind
+        command:
+          - "sh"
+          - "-c"
+          - >
+            dockerd & sleep 10; docker pull arxivvanity/engrafo; exit
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "3Gi"
+            cpu: "2"
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: docker-graph-storage
+          mountPath: /var/lib/docker
+
       containers:
+      - name: dind-daemon
+        image: docker:18.09.2-dind
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1"
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: docker-graph-storage
+          mountPath: /var/lib/docker
+
       - name: arxiv-readability-worker
         image: arxiv/readability:{{ .Values.imageTag }}
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
+        resources:
+          limits:
+            cpu: 300m
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        volumeMounts:
+        - name: vault-token
+          mountPath: /etc/vault
+        - name: run
+          mountPath: /var/run/celery
         command:
           - "sh"
           - "-c"
           - >
-            celery -A arxiv_html worker -l info
+            while true; do
+              KUBE_TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token);
+              curl -k --request POST --data '{"jwt": "'"$KUBE_TOKEN"'", "role": "'"$VAULT_ROLE"'"}' https://$VAULT_HOST:$VAULT_PORT/v1/auth/kubernetes/login | jq -j '.auth.client_token' > /etc/vault/token;
+              X_VAULT_TOKEN=$(cat /etc/vault/token);
+              $(eval "curl -k -H \"X-Vault-Token: $X_VAULT_TOKEN\" https://$VAULT_HOST:$VAULT_PORT/v1/aws/creds/$VAULT_CREDENTIAL | jq -r '.data | \"export AWS_ACCESS_KEY_ID=\(.access_key)\nexport AWS_SECRET_ACCESS_KEY=\(.secret_key)\"'");
+              if [ ! -f /var/run/celery/worker.pid ]; then celery multi start 1 -A arxiv_html -l debug -E -c4 --logfile=%p.log --pidfile=/var/run/celery/worker.pid; else celery multi restart 1 -l debug -E --logfile=%p.log --pidfile=/var/run/celery/worker.pid; fi;
+              sleep 72764795;
+            done
         env:
         - name: DATABASE_URL
-          value: "{{ .Values.database_url }}"
+          valueFrom:
+            secretKeyRef:
+              name: "{{ .Values.database.secret.name }}"
+              key: "{{ .Values.database.secret.key }}"
         - name: CELERY_BROKER_URL
-          value: "redis://{{ .Values.redis.host }}:{{ .Values.redis.port}}"
+          valueFrom:
+            secretKeyRef:
+              name: "{{ .Values.redis.secret.name }}"
+              key: "{{ .Values.redis.secret.key }}"
         - name: CELERY_RESULT_BACKEND
-          value: "redis://{{ .Values.redis.host }}:{{ .Values.redis.port}}"
+          valueFrom:
+            secretKeyRef:
+              name: "{{ .Values.redis.secret.name }}"
+              key: "{{ .Values.redis.secret.key }}"
         - name: SECRET_KEY
-          value: "{{ .Values.secret_key }}"
+          valueFrom:
+            secretKeyRef:
+              name: "{{ .Values.django.secret.name }}"
+              key: "{{ .Values.django.secret.key }}"
         - name: ALLOWED_HOSTS
           value: "*"
+        - name: DOCKER_HOST
+          value: tcp://localhost:2375
+        - name: VAULT_HOST
+          valueFrom:
+            secretKeyRef:
+              name: "{{ .Values.vault.secret.name }}"
+              key: "{{ .Values.vault.secret.host_key }}"
+        - name: VAULT_PORT
+          valueFrom:
+            secretKeyRef:
+              name: "{{ .Values.vault.secret.name }}"
+              key: "{{ .Values.vault.secret.port_key }}"
+        - name: VAULT_CREDENTIAL
+          valueFrom:
+            secretKeyRef:
+              name: "{{ .Values.vault.secret.name }}"
+              key: "{{ .Values.vault.secret.credential_key }}"
+        - name: AWS_STORAGE_BUCKET_NAME
+          value: "{{ .Values.s3.bucket }}"
+        - name: AWS_S3_REGION_NAME
+          value: "{{ .Values.s3.region }}"
+        - name: VAULT_ROLE
+          value: readability-worker
+        - name: MEDIA_USE_S3
+          value: "1"
+        - name: DJANGO_LOG_LEVEL
+          value: "DEBUG"

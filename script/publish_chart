@@ -1,0 +1,4 @@
+#!/bin/bash
+
+helm package deployment/readability
+helm s3 push ./readability-*.tgz arxiv || echo "This chart version already published"
